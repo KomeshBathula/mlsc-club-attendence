@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 require('dotenv').config();
 
 const app = express();
@@ -14,6 +15,19 @@ app.use(express.json());
 app.use((req, res, next) => {
   console.log(`[REQUEST] ${req.method} ${req.url}`);
   next();
+});
+
+// Error handling for the process
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('\n[UNHANDLED REJECTION]');
+  console.error('At Promise:', promise);
+  console.error('Reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('\n[UNCAUGHT EXCEPTION]');
+  console.error(error);
+  process.exit(1);
 });
 
 // Initialize Auth - using service account
@@ -33,10 +47,18 @@ if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
   privateKey = privateKey.slice(1, -1);
 }
 
+// Configure Proxy if present
+const proxyUrl = process.env.HTTPS_PROXY;
+if (proxyUrl) {
+  console.log(`[PROXY] Detected HTTPS_PROXY: ${proxyUrl}`);
+}
+
 const serviceAccountAuth = new JWT({
   email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
   key: privateKey,
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  // Pass the proxy agent to the underlying request library (gaxios)
+  ...(proxyUrl ? { options: { agent: new HttpsProxyAgent(proxyUrl) } } : {})
 });
 
 const doc = new GoogleSpreadsheet(process.env.SPREADSHEET_ID, serviceAccountAuth);
@@ -136,15 +158,15 @@ app.post('/api/mark-attendance', async (req, res) => {
 
 // API for Spot Registration
 app.post('/api/spot-register', async (req, res) => {
-  const { name, rollNo, branch, password } = req.body;
+  const { name, rollNo, branch, yearOfStudy, password } = req.body;
   console.log(`\n[SPOT] Received Request for: "${name}" (${rollNo})`);
 
   if (!password || password !== process.env.SPOT_REGISTRATION_PASSWORD) {
     return res.status(401).json({ error: 'Invalid portal password' });
   }
 
-  if (!name || !rollNo || !branch) {
-    return res.status(400).json({ error: 'Name, Roll Number, and Branch are required' });
+  if (!name || !rollNo || !branch || !yearOfStudy) {
+    return res.status(400).json({ error: 'Name, Roll Number, Branch, and Year of Study are required' });
   }
 
   try {
@@ -161,6 +183,8 @@ app.post('/api/spot-register', async (req, res) => {
 
     if (studentRow) {
       studentRow.set('isPresent', 'TRUE');
+      // Update data if it was missing
+      if (yearOfStudy) studentRow.set('Year of Study', yearOfStudy);
       await studentRow.save();
 
       return res.status(200).json({
@@ -168,7 +192,8 @@ app.post('/api/spot-register', async (req, res) => {
         student: {
           name: studentRow.get('Name'),
           rollNo: studentRow.get('Rollnumber'),
-          branch: studentRow.get('Branch')
+          branch: studentRow.get('Branch'),
+          yearOfStudy: studentRow.get('Year of Study')
         }
       });
     }
@@ -177,7 +202,8 @@ app.post('/api/spot-register', async (req, res) => {
       'isPresent': 'TRUE',
       'Name': name.trim(),
       'Rollnumber': rollNo.toString().trim().toUpperCase(),
-      'Branch': branch.trim().toUpperCase()
+      'Branch': branch.trim().toUpperCase(),
+      'Year of Study': yearOfStudy.trim()
     });
 
     return res.status(201).json({
@@ -185,7 +211,8 @@ app.post('/api/spot-register', async (req, res) => {
       student: {
         name: newRow.get('Name'),
         rollNo: newRow.get('Rollnumber'),
-        branch: newRow.get('Branch')
+        branch: newRow.get('Branch'),
+        yearOfStudy: newRow.get('Year of Study')
       }
     });
 
@@ -221,6 +248,17 @@ app.get('/', (req, res) => {
   res.send('Attendance Backend is Running');
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`\nCRITICAL ERROR: Port ${PORT} is already in use.`);
+    console.error(`This usually happens if another instance of the server is already running.`);
+    console.error(`Try stopping other nodes or use: fuser -k ${PORT}/tcp`);
+    process.exit(1);
+  } else {
+    console.error('\n[SERVER ERROR]', error);
+  }
 });
