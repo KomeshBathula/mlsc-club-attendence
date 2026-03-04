@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Scanner from './components/Scanner';
 import ManualEntry from './components/ManualEntry';
 import AttendanceList from './components/AttendanceList';
+import SpotRegistration from './components/SpotRegistration';
 
 function App() {
   const [activeTab, setActiveTab] = useState('scan');
@@ -20,10 +21,10 @@ function App() {
       </header>
 
       {/* Toggle */}
-      <div className="flex bg-white/5 backdrop-blur-md p-1 rounded-xl border border-white/10 mb-8">
+      <div className="flex bg-white/5 backdrop-blur-md p-1 rounded-xl border border-white/10 mb-8 overflow-x-auto max-w-full">
         <button
           onClick={() => setActiveTab('scan')}
-          className={`cursor-pointer px-6 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'scan'
+          className={`cursor-pointer px-4 md:px-6 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 whitespace-nowrap ${activeTab === 'scan'
             ? 'bg-primary text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]'
             : 'text-slate-400 hover:text-white'
             }`}
@@ -32,7 +33,7 @@ function App() {
         </button>
         <button
           onClick={() => setActiveTab('manual')}
-          className={`cursor-pointer px-6 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'manual'
+          className={`cursor-pointer px-4 md:px-6 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 whitespace-nowrap ${activeTab === 'manual'
             ? 'bg-primary text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]'
             : 'text-slate-400 hover:text-white'
             }`}
@@ -40,8 +41,17 @@ function App() {
           Manual Entry
         </button>
         <button
+          onClick={() => setActiveTab('spot')}
+          className={`cursor-pointer px-4 md:px-6 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 whitespace-nowrap ${activeTab === 'spot'
+            ? 'bg-orange-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.5)]'
+            : 'text-slate-400 hover:text-white'
+            }`}
+        >
+          Spot Registration
+        </button>
+        <button
           onClick={() => setActiveTab('list')}
-          className={`cursor-pointer px-6 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'list'
+          className={`cursor-pointer px-4 md:px-6 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 whitespace-nowrap ${activeTab === 'list'
             ? 'bg-primary text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]'
             : 'text-slate-400 hover:text-white'
             }`}
@@ -57,6 +67,9 @@ function App() {
         </div>
         <div className={`transition-opacity duration-300 ${activeTab === 'manual' ? 'block' : 'hidden'}`}>
           <ManualEntry />
+        </div>
+        <div className={`transition-opacity duration-300 ${activeTab === 'spot' ? 'block' : 'hidden'}`}>
+          <SpotRegistration />
         </div>
         <div className={`transition-opacity duration-300 ${activeTab === 'list' ? 'block' : 'hidden'}`}>
           <AttendanceList />
