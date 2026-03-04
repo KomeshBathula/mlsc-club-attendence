@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
 import { markAttendance } from '../services/api';
+import scannerService from '../services/scannerService';
 
-const Scanner = ({ onScanSuccess }) => {
+const Scanner = ({ onScanSuccess, onScan, autoStart = false, id = "reader-custom" }) => {
     const [scanResult, setScanResult] = useState(null);
     const [scanError, setScanError] = useState(null);
     const [isScanning, setIsScanning] = useState(false);
@@ -14,20 +14,28 @@ const Scanner = ({ onScanSuccess }) => {
     const lastScannedTime = useRef(0);
     const COOLDOWN_MS = 3000; // 3 seconds before same code can be scanned again
 
-    const scannerRef = useRef(null);
-    const readerId = "reader-custom";
+    const readerId = id;
 
     // Initialize scanner instance once
     useEffect(() => {
-        return () => {
-            if (scannerRef.current) {
-                if (scannerRef.current.isScanning) {
-                    scannerRef.current.stop().catch(console.error);
-                }
-                scannerRef.current.clear();
+        let isMounted = true;
+
+        const init = async () => {
+            if (autoStart) {
+                // Small delay to ensure DOM is ready and styled
+                await new Promise(r => setTimeout(r, 100));
+                if (isMounted) startScanning();
             }
         };
-    }, []);
+
+        init();
+
+        return () => {
+            isMounted = false;
+            // Safe cleanup using service
+            scannerService.clearSafe();
+        };
+    }, [autoStart, readerId]);
 
     const startScanning = useCallback(async (cameraIdToUse = null) => {
         setScanError(null);
@@ -35,56 +43,58 @@ const Scanner = ({ onScanSuccess }) => {
         // Debug: check if element exists
         const element = document.getElementById(readerId);
         if (!element) {
-            setScanError("Internal Error: Scanner element not ready. Please retry.");
+            console.error(`Scanner element #${readerId} not found`);
+            setScanError("Camera Error: Element not ready. Please retry.");
             return;
         }
 
         try {
-            let availableCameras = [];
-            try {
-                availableCameras = await Html5Qrcode.getCameras();
-                setCameras(availableCameras);
-            } catch (e) {
-                console.warn("Could not list cameras, generic start...", e);
-            }
-
-            // Improved config for better recognition
+            // Improved config for better recognition - Faster FPS and optimized scanning
             let config = {
-                fps: 10,
-                // qrbox is optional. If omitted, it scans the full frame. 
-                // Using a function allows it to be responsive, but removing it is safest for "not recognizing" issues.
+                fps: 30, // Max recommended FPS
                 qrbox: (viewfinderWidth, viewfinderHeight) => {
-                    // Use 70% of the smaller dimension
                     const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                    const edge = Math.floor(minEdge * 0.7);
+                    const edge = Math.floor(minEdge * 0.85);
                     return { width: edge, height: edge };
                 },
-                aspectRatio: 1.0
+                aspectRatio: 1.0,
+                showTorchButtonIfSupported: true,
+                focusMode: "continuous"
             };
 
-            if (!scannerRef.current) {
-                scannerRef.current = new Html5Qrcode(readerId);
-            }
+            const handleScanResult = (t) => handleScan(t);
+            const handleScanError = () => { };
 
             if (cameraIdToUse) {
-                await scannerRef.current.start(cameraIdToUse, config, (t) => handleScan(t), () => { });
-            }
-            else if (availableCameras.length > 0) {
-                let targetId;
-                const backCamera = availableCameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('environment'));
-                targetId = backCamera ? backCamera.id : availableCameras[availableCameras.length - 1].id;
-                if (availableCameras.length === 1) targetId = availableCameras[0].id;
-
-                setActiveCameraId(targetId);
-                await scannerRef.current.start(targetId, config, (t) => handleScan(t), () => { });
-            }
-            else {
+                await scannerService.startSafe(readerId, cameraIdToUse, config, handleScanResult, handleScanError);
+                setActiveCameraId(cameraIdToUse);
+            } else {
+                // TRY FAST START with environment camera first
                 try {
-                    await scannerRef.current.start({ facingMode: "environment" }, config, (t) => handleScan(t), () => { });
-                } catch (err2) {
-                    await scannerRef.current.start({ facingMode: "user" }, config, (t) => handleScan(t), () => { });
+                    await scannerService.startSafe(readerId, { facingMode: "environment" }, config, handleScanResult, handleScanError);
+                    setIsScanning(true);
+
+                    // After startup, get cameras in background for the switcher
+                    const { Html5Qrcode } = await import('html5-qrcode');
+                    Html5Qrcode.getCameras().then(available => {
+                        setCameras(available);
+                    }).catch(e => console.warn("Camera list fetch failed", e));
+
+                } catch (err) {
+                    console.warn("Environment camera failed, falling back...", err);
+                    const { Html5Qrcode } = await import('html5-qrcode');
+                    const availableCameras = await Html5Qrcode.getCameras();
+                    setCameras(availableCameras);
+
+                    if (availableCameras.length > 0) {
+                        const backCamera = availableCameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('environment'));
+                        const targetId = backCamera ? backCamera.id : availableCameras[0].id;
+                        setActiveCameraId(targetId);
+                        await scannerService.startSafe(readerId, targetId, config, handleScanResult, handleScanError);
+                    } else {
+                        await scannerService.startSafe(readerId, { facingMode: "user" }, config, handleScanResult, handleScanError);
+                    }
                 }
-                Html5Qrcode.getCameras().then(setCameras).catch(e => console.log(e));
             }
 
             setIsScanning(true);
@@ -96,17 +106,11 @@ const Scanner = ({ onScanSuccess }) => {
             if (err.name === 'NotAllowedError') msg = "Camera permission denied";
             setScanError(`Camera Error: ${msg}`);
         }
-    }, [cameras]);
+    }, [cameras, readerId]);
 
     const stopScanning = async () => {
-        if (scannerRef.current && isScanning) {
-            try {
-                await scannerRef.current.stop();
-                setIsScanning(false);
-            } catch (err) {
-                console.error("Failed to stop", err);
-            }
-        }
+        await scannerService.stopSafe();
+        setIsScanning(false);
     };
 
     const handleSwitchCamera = async () => {
@@ -130,10 +134,15 @@ const Scanner = ({ onScanSuccess }) => {
 
         if (navigator.vibrate) try { navigator.vibrate(200); } catch (e) { }
 
+        // If onScan is provided, we just return the result and don't mark attendance automatically
+        if (onScan) {
+            onScan(rollNo);
+            return;
+        }
+
         try {
             const data = await markAttendance(rollNo);
 
-            // Success Vibration (Double Pulse)
             if (navigator.vibrate) try { navigator.vibrate([100, 50, 100]); } catch (e) { }
 
             setScanResult({
@@ -148,7 +157,6 @@ const Scanner = ({ onScanSuccess }) => {
         } catch (err) {
             setScanError(err.message);
             setScanResult(null);
-            // Error Vibration (Longer Pulse)
             if (navigator.vibrate) try { navigator.vibrate(400); } catch (e) { }
         }
     };
@@ -157,7 +165,7 @@ const Scanner = ({ onScanSuccess }) => {
         <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-4">
 
             <style>{`
-                #reader-custom video {
+                #${readerId} video {
                     object-fit: cover !important;
                     width: 100% !important;
                     height: 100% !important;
