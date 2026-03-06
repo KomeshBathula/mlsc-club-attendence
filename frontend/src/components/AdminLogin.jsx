@@ -15,6 +15,29 @@ const AdminLogin = ({ onBack }) => {
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [exportMessage, setExportMessage] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [availableBranches, setAvailableBranches] = useState([]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      getAttendance().then(data => {
+        const students = data.students || [];
+        const branches = new Set();
+        students.forEach(s => {
+          if (s.branch) branches.add(s.branch.trim().toUpperCase());
+        });
+        setAvailableBranches(Array.from(branches).sort());
+      }).catch(err => console.error("Error fetching branches:", err));
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (exportMessage) {
+      const timer = setTimeout(() => {
+        setExportMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [exportMessage]);
 
   // Auto-branch logic based on Year
   useEffect(() => {
@@ -28,7 +51,6 @@ const AdminLogin = ({ onBack }) => {
   const handleExportPDF = async () => {
     if (!selectedYear || !selectedBranch) {
       setExportMessage('Please select both Year and Branch to export.');
-      setTimeout(() => setExportMessage(null), 3000);
       return;
     }
 
@@ -68,8 +90,6 @@ const AdminLogin = ({ onBack }) => {
       if (filtered.length === 0) {
         setExportMessage("No students registered for this filter");
         setIsExporting(false);
-        // Auto clear yellow message after 4s
-        setTimeout(() => setExportMessage(null), 4000);
         return;
       }
 
@@ -101,10 +121,8 @@ const AdminLogin = ({ onBack }) => {
       doc.save(fileName);
 
       setExportMessage(`Successfully exported ${filtered.length} students`);
-      setTimeout(() => setExportMessage(null), 3000);
     } catch (err) {
       setExportMessage("Error exporting data: " + err.message);
-      setTimeout(() => setExportMessage(null), 3000);
     } finally {
       setIsExporting(false);
     }
@@ -197,18 +215,10 @@ const AdminLogin = ({ onBack }) => {
                       {selectedYear === '1st Year' ? (
                         <option value="BSH">BSH</option>
                       ) : (
-                        <>
-                          <option value="CSE">CSE</option>
-                          <option value="CST">CST</option>
-                          <option value="AI">AI</option>
-                          <option value="AIML">AIML</option>
-                          <option value="ECE">ECE</option>
-                          <option value="ECT">ECT</option>
-                          <option value="CIVIL">CIVIL</option>
-                          <option value="MECH">MECH</option>
-                        </>
-                      )}
-                    </select>
+                        availableBranches.map(branch => (
+                          <option key={branch} value={branch}>{branch}</option>
+                        ))
+                      )}     </select>
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
@@ -236,8 +246,14 @@ const AdminLogin = ({ onBack }) => {
 
               {/* Export Message */}
               {exportMessage && (
-                <div className={`p-4 mt-4 rounded-xl text-sm font-medium border ${exportMessage.includes("No students") ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" : exportMessage.includes("Error") ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-green-500/10 border-green-500/20 text-green-400"} transition-all`}>
-                  {exportMessage}
+                <div
+                  onClick={() => setExportMessage(null)}
+                  className={`p-4 mt-4 rounded-xl text-sm font-medium border cursor-pointer animate-fade-in-up ${exportMessage.includes("No students") ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" : exportMessage.includes("Error") ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-green-500/10 border-green-500/20 text-green-400"} transition-all`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{exportMessage}</span>
+                    <svg className="w-4 h-4 opacity-70 hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </div>
                 </div>
               )}
 
