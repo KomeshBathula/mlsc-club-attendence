@@ -167,7 +167,9 @@ const AdminLogin = ({ onBack }) => {
         </button>
 
         <div className="flex flex-col items-center w-full max-w-4xl animate-fade-in-up">
-          <img src="/logo.png" alt="MLSC Logo" className="h-20 sm:h-28 mb-6 object-contain drop-shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-transform hover:scale-105 duration-300" />
+          <div className="w-24 h-24 sm:w-28 sm:h-28 mb-6 rounded-full bg-slate-900/80 border-[3px] border-cyan-500/40 p-3 shadow-[0_0_25px_rgba(34,211,238,0.3)] flex items-center justify-center transition-all hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(34,211,238,0.5)] group backdrop-blur-xl scale-95 sm:scale-100">
+            <img src="/logo.png" alt="MLSC Logo" className="w-full h-full object-contain drop-shadow-lg transition-transform group-hover:scale-110 duration-500" />
+          </div>
 
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 mb-8 drop-shadow-[0_0_10px_rgba(34,211,238,0.3)]">
             HOD Dashboard
@@ -294,8 +296,9 @@ const AdminLogin = ({ onBack }) => {
 
       {/* Main Content */}
       <div className="flex flex-col items-center w-full max-w-md animate-fade-in-up">
-        {/* Logo area */}
-        <img src="/logo.png" alt="MLSC Logo" className="h-20 sm:h-28 mb-6 object-contain drop-shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-transform hover:scale-105 duration-300" />
+        <div className="w-24 h-24 sm:w-28 sm:h-28 mb-6 rounded-full bg-slate-900/80 border-[3px] border-cyan-500/40 p-3 shadow-[0_0_25px_rgba(34,211,238,0.3)] flex items-center justify-center transition-all hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(34,211,238,0.5)] group backdrop-blur-xl scale-95 sm:scale-100">
+          <img src="/logo.png" alt="MLSC Logo" className="w-full h-full object-contain drop-shadow-lg transition-transform group-hover:scale-110 duration-500" />
+        </div>
 
         {/* Heading container */}
         <div className="text-center mb-8 w-full px-4">
