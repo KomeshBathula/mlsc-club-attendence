@@ -167,9 +167,7 @@ const AdminLogin = ({ onBack }) => {
         </button>
 
         <div className="flex flex-col items-center w-full max-w-4xl animate-fade-in-up">
-          <div className="w-24 h-24 mb-6 rounded-full bg-white/5 border border-white/10 p-2 shadow-[0_0_20px_rgba(34,211,238,0.2)] backdrop-blur-sm">
-            <img src="/logo.png" alt="MLSC Logo" className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]" />
-          </div>
+          <img src="/logo.png" alt="MLSC Logo" className="h-20 sm:h-28 mb-6 object-contain drop-shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-transform hover:scale-105 duration-300" />
 
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 mb-8 drop-shadow-[0_0_10px_rgba(34,211,238,0.3)]">
             HOD Dashboard
@@ -297,9 +295,7 @@ const AdminLogin = ({ onBack }) => {
       {/* Main Content */}
       <div className="flex flex-col items-center w-full max-w-md animate-fade-in-up">
         {/* Logo area */}
-        <div className="w-24 h-24 mb-6 rounded-full bg-white/5 border border-white/10 p-2 shadow-[0_0_20px_rgba(34,211,238,0.2)] backdrop-blur-sm">
-          <img src="/logo.png" alt="MLSC Logo" className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]" />
-        </div>
+        <img src="/logo.png" alt="MLSC Logo" className="h-20 sm:h-28 mb-6 object-contain drop-shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-transform hover:scale-105 duration-300" />
 
         {/* Heading container */}
         <div className="text-center mb-8 w-full px-4">

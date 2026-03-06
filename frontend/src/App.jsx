@@ -27,9 +27,7 @@ function App() {
 
       {/* Header */}
       <header className="mb-8 text-center flex flex-col items-center">
-        <div className="w-24 h-24 mb-4 rounded-full bg-white/5 border border-white/10 p-2 shadow-[0_0_20px_rgba(34,211,238,0.2)] backdrop-blur-sm">
-          <img src="/logo.png" alt="MLSC Logo" className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]" />
-        </div>
+        <img src="/logo.png" alt="MLSC Logo" className="h-20 sm:h-28 mb-4 object-contain drop-shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-transform hover:scale-105 duration-300" />
         <h1 className="text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 mb-2 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] animate-pulse-slow">
           MLSC Club
         </h1>
