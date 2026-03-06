@@ -239,6 +239,7 @@ app.get('/api/attendance', async (req, res) => {
       name: row.get('Name'),
       rollNo: row.get('Rollnumber'),
       branch: row.get('Branch'),
+      year: row.get('Year of Study') || row.get('Year') || '',
       isPresent: row.get('isPresent') === 'TRUE' || row.get('isPresent') === 'Present' || row.get('isPresent') === true
     }));
 

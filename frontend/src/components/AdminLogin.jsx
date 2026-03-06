@@ -58,6 +58,13 @@ const AdminLogin = ({ onBack }) => {
         return true; // "All" selected
       });
 
+      // Sort natural alphanumeric by rollNo
+      filtered.sort((a, b) => {
+        const rollA = (a.rollNo || '').toString().toLowerCase();
+        const rollB = (b.rollNo || '').toString().toLowerCase();
+        return rollA.localeCompare(rollB, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
       if (filtered.length === 0) {
         setExportMessage("No students registered for this filter");
         setIsExporting(false);
