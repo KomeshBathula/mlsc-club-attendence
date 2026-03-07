@@ -94,10 +94,8 @@ function App() {
 
       {/* Footer */}
       <footer className="mt-12 flex flex-col items-center gap-3 text-slate-500 text-sm">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-3 flex-wrap justify-center">
           <span className="opacity-60">Developed by</span>
-        </div>
-        <div className="flex items-center gap-4">
           <a
             href="https://github.com/BhargavChowdaryBala"
             target="_blank"

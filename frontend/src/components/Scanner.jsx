@@ -10,7 +10,6 @@ const Scanner = ({ onScanSuccess, onScan, autoStart = false, id = "reader-custom
     const [cameras, setCameras] = useState([]);
     const [activeCameraId, setActiveCameraId] = useState(null);
     const [scanHistory, setScanHistory] = useState([]);
-    const historyEndRef = useRef(null);
 
     // State for duplicate prevention
     const lastScannedCode = useRef(null);
@@ -148,7 +147,7 @@ const Scanner = ({ onScanSuccess, onScan, autoStart = false, id = "reader-custom
 
             if (navigator.vibrate) try { navigator.vibrate([100, 50, 100]); } catch (e) { }
 
-            // Play appropriate beep based on result
+            // Play appropriate beep based on HTTP status or response message
             const isAlreadyPresent = data.message?.toLowerCase().includes('already');
             if (isAlreadyPresent) {
                 playDuplicateBeep();
@@ -176,8 +175,8 @@ const Scanner = ({ onScanSuccess, onScan, autoStart = false, id = "reader-custom
             onScanSuccess && onScanSuccess(data);
 
         } catch (err) {
-            // Check if it's a "not registered" error — show as a styled card, not generic error
-            const isNotRegistered = err.message?.toLowerCase().includes('not registered');
+            // Use HTTP status code (404) for robust detection instead of fragile string matching
+            const isNotRegistered = err.statusCode === 404;
             if (isNotRegistered) {
                 const notRegEntry = {
                     id: Date.now(),
@@ -190,6 +189,13 @@ const Scanner = ({ onScanSuccess, onScan, autoStart = false, id = "reader-custom
                 setScanResult(notRegEntry);
                 setScanError(null);
                 playErrorBeep();
+
+                // Add "not registered" entry to history for consistency
+                setScanHistory(prev => {
+                    const updated = [notRegEntry, ...prev];
+                    return updated.slice(0, 10);
+                });
+
                 if (navigator.vibrate) try { navigator.vibrate(400); } catch (e) { }
             } else {
                 setScanError(err.message);
@@ -365,25 +371,32 @@ const Scanner = ({ onScanSuccess, onScan, autoStart = false, id = "reader-custom
                                 className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors"
                             >
                                 {/* Status Dot */}
-                                <div className={`w-2 h-2 rounded-full flex-shrink-0 shadow-sm ${entry.isAlreadyPresent
-                                    ? 'bg-yellow-400 shadow-yellow-400/30'
-                                    : 'bg-green-400 shadow-green-400/30'
+                                <div className={`w-2 h-2 rounded-full flex-shrink-0 shadow-sm ${entry.isNotRegistered
+                                        ? 'bg-red-400 shadow-red-400/30'
+                                        : entry.isAlreadyPresent
+                                            ? 'bg-yellow-400 shadow-yellow-400/30'
+                                            : 'bg-green-400 shadow-green-400/30'
                                     }`}></div>
 
                                 {/* Student Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-semibold text-white truncate">
-                                            {entry.student?.name || 'Unknown'}
+                                            {entry.student?.name || entry.rollNo || 'Unknown'}
                                         </span>
                                         {entry.isAlreadyPresent && (
                                             <span className="text-[9px] font-bold text-yellow-500 bg-yellow-500/10 px-1.5 py-0.5 rounded border border-yellow-500/20 uppercase tracking-wider flex-shrink-0">
                                                 Dup
                                             </span>
                                         )}
+                                        {entry.isNotRegistered && (
+                                            <span className="text-[9px] font-bold text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 uppercase tracking-wider flex-shrink-0">
+                                                N/R
+                                            </span>
+                                        )}
                                     </div>
                                     <span className="text-xs text-slate-500 font-mono">
-                                        {entry.student?.rollNo || ''}
+                                        {entry.student?.rollNo || entry.rollNo || ''}
                                     </span>
                                 </div>
 
@@ -393,7 +406,6 @@ const Scanner = ({ onScanSuccess, onScan, autoStart = false, id = "reader-custom
                                 </span>
                             </div>
                         ))}
-                        <div ref={historyEndRef}></div>
                     </div>
                 </div>
             )}

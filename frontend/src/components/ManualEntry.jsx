@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { markAttendance } from '../services/api';
-import { playSuccessBeep } from '../services/beepService';
+import { playSuccessBeep, playDuplicateBeep } from '../services/beepService';
 
 const ManualEntry = () => {
     const [rollNo, setRollNo] = useState('');
@@ -23,7 +23,13 @@ const ManualEntry = () => {
                 student: data.student
             });
             setRollNo(''); // Clear input on success
-            playSuccessBeep();
+            // Play appropriate beep based on result
+            const isAlreadyPresent = data.message?.toLowerCase().includes('already');
+            if (isAlreadyPresent) {
+                playDuplicateBeep();
+            } else {
+                playSuccessBeep();
+            }
             if (navigator.vibrate) navigator.vibrate(200);
         } catch (err) {
             setError(err.message);
