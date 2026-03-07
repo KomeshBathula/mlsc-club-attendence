@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { markAttendance } from '../services/api';
+import { playSuccessBeep } from '../services/beepService';
 
 const ManualEntry = () => {
     const [rollNo, setRollNo] = useState('');
@@ -22,6 +23,7 @@ const ManualEntry = () => {
                 student: data.student
             });
             setRollNo(''); // Clear input on success
+            playSuccessBeep();
             if (navigator.vibrate) navigator.vibrate(200);
         } catch (err) {
             setError(err.message);

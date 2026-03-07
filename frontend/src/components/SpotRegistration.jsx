@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { spotRegister } from '../services/api';
 import Scanner from './Scanner';
+import { playSuccessBeep } from '../services/beepService';
 
 const SpotRegistration = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -67,6 +68,7 @@ const SpotRegistration = () => {
                 password
             });
             setMessage(result.message);
+            playSuccessBeep();
             // Reset form but keep authentication
             setFormData({
                 name: '',
